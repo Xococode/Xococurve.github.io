@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Curvas 3D Simplificado</title>
+    <style>
+        /* Reset básico para eliminar márgenes y paddings predeterminados */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+
+        canvas { 
+            display: block; 
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 300px;
+            width: 90%;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-gap: 15px;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .ui-container h3, .ui-container h4 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 18px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+
+        .ui-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ui-section label {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .ui-section input, 
+        .ui-section select, 
+        .ui-section button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .ui-section input:focus, 
+        .ui-section select:focus, 
+        .ui-section button:focus {
+            border-color: #66afe9;
+            box-shadow: 0 0 5px rgba(102, 175, 233, 0.6);
+            outline: none;
+        }
+
+        .ui-section button {
+            cursor: pointer;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+        }
+
+        .ui-section button:hover {
+            background-color: #0056b3;
+        }
+
+        .full-width {
+            width: 100%;
+        }
+
+        /* Scrollbar personalizada para la UI */
+        .ui-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ui-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 10px;
+        }
+
+        .ui-container::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 10px;
+        }
+
+        .ui-container::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .ui-container {
+                max-width: 90%;
+                left: 5%;
+                top: 10px;
+                padding: 15px;
+            }
+
+            .ui-container h3, .ui-container h4 {
+                font-size: 16px;
+            }
+
+            .ui-section input, 
+            .ui-section select, 
+            .ui-section button {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-container">
+        <section class="ui-section">
+            <h3>Crear Curvas 3D</h3>
+            <label for="curveType">Tipo de Curva:
+                <select id="curveType" aria-label="Seleccionar tipo de curva">
+                    <option value="LineCurve3">Línea 3D</option>
+                    <option value="QuadraticBezierCurve3">Cuadrática 3D</option>
+                    <option value="CatmullRomCurve3">Catmull-Rom 3D</option>
+                    <option value="CubicBezierCurve3">Cúbica 3D</option> <!-- Nueva opción añadida -->
+                </select>
+            </label>
+            <button id="createCurveButton" class="full-width">Crear Curva</button>
+        </section>
+
+        <section class="ui-section">
+            <h3>Modo de Interacción</h3>
+            <button id="cursorModeButton" class="full-width">Modo Cursor: OFF</button>
+            <button id="transformModeTranslate" class="full-width">Mover</button>
+            <button id="transformModeRotate" class="full-width">Rotar</button>
+            <button id="transformModeScale" class="full-width">Escalar</button>
+        </section>
+
+        <section class="ui-section">
+            <h3>Snapping</h3>
+            <button id="toggleSnap" class="full-width">Activar Snap: OFF</button>
+            <label for="proximityThresholdInput">Umbral de Proximidad:
+                <input type="number" id="proximityThresholdInput" value="1" step="0.1" min="0.1" max="10" aria-label="Umbral de proximidad para snapping">
+            </label>
+        </section>
+
+        <section class="ui-section">
+            <h3>Posición del Punto Seleccionado</h3>
+            <label for="selectedX">X:
+                <input type="number" id="selectedX" step="0.1" aria-label="Coordenada X del punto seleccionado">
+            </label>
+            <label for="selectedY">Y:
+                <input type="number" id="selectedY" step="0.1" aria-label="Coordenada Y del punto seleccionado">
+            </label>
+            <label for="selectedZ">Z:
+                <input type="number" id="selectedZ" step="0.1" aria-label="Coordenada Z del punto seleccionado">
+            </label>
+            <button id="updatePointPosition" class="full-width">Actualizar Posición</button>
+        </section>
+    </div>
+
+    <!-- Librerías de Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <!-- Archivo JavaScript de la aplicación -->
+    <script src="app.js"></script>
+</body>
+</html>
