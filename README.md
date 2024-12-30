@@ -1,6 +1,15 @@
 # Control de Curvas 3D Simplificado
 
 
+![3D Curve](Captura3d.JPG)
+
+
+## Acceso Rápido a la Aplicación
+[3D Curve](https://xococode.github.io/Xococurve.github.io/)
+
+
+
+
 
 ## Descripción
 
